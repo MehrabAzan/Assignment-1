@@ -1,7 +1,7 @@
 def quick_sort(A, lo, hi):
     if lo < hi:
         pivot = partition(A, lo, hi)
-        return quick_sort(A, lo, pivot) + quick_sort(A, pivot + 1, hi)
+        return quick_sort(A, lo, pivot) + [pivot] + quick_sort(A, pivot + 1, hi)
 
 def partition(A, lo, hi):
     pivot = A[lo]
@@ -16,4 +16,4 @@ def partition(A, lo, hi):
 
     return leftwall
 
-print(quick_sort([3, 6, 8, 10, 1, 2, 1], 0, 6))
+print(quick_sort([3, 6, 8, 10, 1, 2, 1], 0, 7))
