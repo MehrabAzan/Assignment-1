@@ -1,35 +1,35 @@
-def quick_sort(A, lo, hi, depth=0, stats=None):
+def quick_sort(a, lo, hi, depth=0, stats=None):
     if hi - lo <= 1:
-        return A[lo:hi]
+        return a[lo:hi]
 
     if stats is not None:
         stats["partitions"] += 1
-        stats["maxDepth"] = max(stats["maxDepth"], depth)
+        stats["max_depth"] = max(stats["max_depth"], depth)
 
-    pivotIndex = partition(A, lo, hi)
-    leftSize = pivotIndex - lo
-    rightSize = hi - pivotIndex - 1
+    pivot_index = partition(a, lo, hi)
+    left_size = pivot_index - lo
+    right_size = hi - pivot_index - 1
     if stats is not None:
-        stats["splits"].append((leftSize, rightSize))
+        stats["splits"].append((left_size, right_size))
 
-    pivotVal = A[pivotIndex]
+    pivot_val = a[pivot_index]
     return (
-        quick_sort(A, lo, pivotIndex, depth + 1, stats)
-        + [pivotVal]
-        + quick_sort(A, pivotIndex + 1, hi, depth + 1, stats)
+        quick_sort(a, lo, pivot_index, depth + 1, stats)
+        + [pivot_val]
+        + quick_sort(a, pivot_index + 1, hi, depth + 1, stats)
     )
 
-def partition(A, lo, hi):
-    A[hi - 2], A[hi - 1] = A[hi - 1], A[hi - 2]
-    pivot = A[hi - 1]
+def partition(a, lo, hi):
+    a[hi - 2], a[hi - 1] = a[hi - 1], a[hi - 2]
+    pivot = a[hi - 1]
     leftwall = lo
 
     for n in range(lo, hi - 1):
-        if A[n] <= pivot:
-            A[n], A[leftwall] = A[leftwall], A[n]
+        if a[n] <= pivot:
+            a[n], a[leftwall] = a[leftwall], a[n]
             leftwall += 1
 
-    A[leftwall], A[hi - 1] = A[hi - 1], A[leftwall]
+    a[leftwall], a[hi - 1] = a[hi - 1], a[leftwall]
     return leftwall
 
 def build_optimal(n):
@@ -39,15 +39,15 @@ def build_optimal(n):
         return [1]
 
     median = (n + 1) // 2
-    leftCount = median - 1
-    rightCount = n - median
-    leftPart = build_optimal(leftCount)
-    rightPart = build_optimal(rightCount)
-    rightPart = [x + median for x in rightPart]
+    left_count = median - 1
+    right_count = n - median
+    left_part = build_optimal(left_count)
+    right_part = build_optimal(right_count)
+    right_part = [x + median for x in right_part]
 
-    arr = leftPart + rightPart[: rightCount - 1] + [median]
-    if rightCount > 0:
-        arr.append(rightPart[-1])
+    arr = left_part + right_part[: right_count - 1] + [median]
+    if right_count > 0:
+        arr.append(right_part[-1])
     return arr
 
 def build_slowest(n):
@@ -56,24 +56,24 @@ def build_slowest(n):
     return list(range(1, n - 1)) + [n, n - 1]
 
 def run_case(label, arr):
-    stats = {"partitions": 0, "maxDepth": 0, "splits": []}
+    stats = {"partitions": 0, "max_depth": 0, "splits": []}
     copy = arr[:]
     result = quick_sort(copy, 0, len(copy), stats=stats)
     print(f"{label}")
     print(f"  input:      {arr}")
     print(f"  sorted:     {result}")
-    print(f"  maxDepth:   {stats['maxDepth']}")
+    print(f"  max_depth:  {stats['max_depth']}")
     print(f"  partitions: {stats['partitions']}")
     print(f"  splits:     {stats['splits']}")
     print()
 
-optimalCases = [build_optimal(n) for n in [3, 7, 15]]
-slowestCases = [build_slowest(n) for n in [3, 7, 15]]
+optimal_cases = [build_optimal(n) for n in [3, 7, 15]]
+slowest_cases = [build_slowest(n) for n in [3, 7, 15]]
 
 print("=== OPTIMAL (balanced splits) ===\n")
-for arr in optimalCases:
+for arr in optimal_cases:
     run_case(f"n = {len(arr)}", arr)
 
 print("=== SLOWEST (unbalanced splits) ===\n")
-for arr in slowestCases:
+for arr in slowest_cases:
     run_case(f"n = {len(arr)}", arr)

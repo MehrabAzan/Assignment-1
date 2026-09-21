@@ -34,7 +34,6 @@ ADJ = [
     [1],          # Dest -> A1
 ]
 
-
 def tops_of(state):
     """Smallest disk on each peg, or -1 if empty (disk 0 = smallest)."""
     tops = [-1] * NUM_PEGS
@@ -43,7 +42,6 @@ def tops_of(state):
             tops[peg] = disk
     return tops
 
-
 def neighbors(state):
     tops = tops_of(state)
     for src in range(NUM_PEGS):
@@ -51,12 +49,11 @@ def neighbors(state):
         if disk < 0:
             continue
         for dst in ADJ[src]:
-            topDst = tops[dst]
-            if topDst < 0 or topDst > disk:
-                newState = list(state)
-                newState[disk] = dst
-                yield tuple(newState), src, dst
-
+            top_dst = tops[dst]
+            if top_dst < 0 or top_dst > disk:
+                new_state = list(state)
+                new_state[disk] = dst
+                yield tuple(new_state), src, dst
 
 def solve_hanoi(n):
     start = tuple([0] * n)
@@ -64,19 +61,19 @@ def solve_hanoi(n):
     if start == goal:
         return []
 
-    parentA = {start: None}
-    moveA = {start: None}
-    parentB = {goal: None}
-    moveB = {goal: None}
-    queueA = deque([start])
-    queueB = deque([goal])
+    parent_a = {start: None}
+    move_a = {start: None}
+    parent_b = {goal: None}
+    move_b = {goal: None}
+    queue_a = deque([start])
+    queue_b = deque([goal])
     meeting = None
 
-    while queueA and queueB:
-        if len(queueA) <= len(queueB):
-            meeting = expand(queueA, parentA, moveA, parentB)
+    while queue_a and queue_b:
+        if len(queue_a) <= len(queue_b):
+            meeting = expand(queue_a, parent_a, move_a, parent_b)
         else:
-            meeting = expand(queueB, parentB, moveB, parentA)
+            meeting = expand(queue_b, parent_b, move_b, parent_a)
         if meeting is not None:
             break
     else:
@@ -84,46 +81,43 @@ def solve_hanoi(n):
 
     path = []
     cur = meeting
-    while moveA[cur] is not None:
-        path.append(moveA[cur])
-        cur = parentA[cur]
+    while move_a[cur] is not None:
+        path.append(move_a[cur])
+        cur = parent_a[cur]
     path.reverse()
 
     cur = meeting
-    while moveB[cur] is not None:
-        src, dst = moveB[cur]
+    while move_b[cur] is not None:
+        src, dst = move_b[cur]
         path.append((dst, src))
-        cur = parentB[cur]
+        cur = parent_b[cur]
     return path
 
-
-def expand(queue, parent, moveMap, otherParent):
+def expand(queue, parent, move_map, other_parent):
     state = queue.popleft()
     for nxt, src, dst in neighbors(state):
         if nxt in parent:
             continue
         parent[nxt] = state
-        moveMap[nxt] = (src, dst)
-        if nxt in otherParent:
+        move_map[nxt] = (src, dst)
+        if nxt in other_parent:
             return nxt
         queue.append(nxt)
     return None
 
-
-def print_moves(moves, firstLast=100):
+def print_moves(moves, first_last=100):
     total = len(moves)
-    if total <= 2 * firstLast:
+    if total <= 2 * first_last:
         for src, dst in moves:
             print(f"{PEGS[src]} -> {PEGS[dst]}")
         return
 
-    for src, dst in moves[:firstLast]:
+    for src, dst in moves[:first_last]:
         print(f"{PEGS[src]} -> {PEGS[dst]}")
-    skipped = total - 2 * firstLast
+    skipped = total - 2 * first_last
     print(f"... ({skipped} moves omitted) ...")
-    for src, dst in moves[-firstLast:]:
+    for src, dst in moves[-first_last:]:
         print(f"{PEGS[src]} -> {PEGS[dst]}")
-
 
 def verify_moves(n, moves):
     stacks = [[] for _ in range(NUM_PEGS)]
@@ -143,7 +137,6 @@ def verify_moves(n, moves):
         if i != 5 and stacks[i]:
             raise AssertionError(f"disks left on {peg}")
 
-
 def main():
     for n in range(1, 11):
         moves = solve_hanoi(n)
@@ -151,7 +144,6 @@ def main():
         print(f"=== n={n}  ({len(moves)} moves) ===")
         print_moves(moves)
         print()
-
 
 if __name__ == "__main__":
     main()
