@@ -32,55 +32,55 @@ PAGE_SIZE = 1000
 MEMORY_FRAMES = 2000
 A, B, C = 0, 1, 2
 
-def page_id(array_id, i, j, row_major):
-    if row_major:
+def page_id(arrayId, i, j, rowMajor):
+    if rowMajor:
         linear = (i - 1) * N + (j - 1)
     else:
         linear = (j - 1) * N + (i - 1)
-    return (array_id, linear // PAGE_SIZE)
+    return (arrayId, linear // PAGE_SIZE)
 
 class LruMemory:
     def __init__(self, frames):
         self.frames = frames
         self.pages = OrderedDict()
-        self.read_transfers = 0
-        self.write_transfers = 0
+        self.readTransfers = 0
+        self.writeTransfers = 0
 
-    def touch(self, page, is_write):
+    def touch(self, page, isWrite):
         if page in self.pages:
             dirty = self.pages.pop(page)
-            self.pages[page] = dirty or is_write
+            self.pages[page] = dirty or isWrite
             return
 
         if len(self.pages) >= self.frames:
-            _, was_dirty = self.pages.popitem(last=False)
-            if was_dirty:
-                self.write_transfers += 1
+            _, wasDirty = self.pages.popitem(last=False)
+            if wasDirty:
+                self.writeTransfers += 1
 
-        self.read_transfers += 1
-        self.pages[page] = is_write
+        self.readTransfers += 1
+        self.pages[page] = isWrite
 
-def run_simulation(row_major, show_progress=True):
+def run_simulation(rowMajor, showProgress=True):
     mem = LruMemory(MEMORY_FRAMES)
-    layout = "row-major" if row_major else "column-major"
+    layout = "row-major" if rowMajor else "column-major"
 
     for i in range(1, N + 1):
         col = N - i + 1
         for j in range(1, N + 1):
-            mem.touch(page_id(C, i, j, row_major), False)
-            mem.touch(page_id(B, i, j, row_major), False)
-            mem.touch(page_id(A, i, j, row_major), True)
-            mem.touch(page_id(C, j, col, row_major), False)
-            mem.touch(page_id(B, j, i, row_major), False)
-            mem.touch(page_id(B, i, j, row_major), True)
+            mem.touch(page_id(C, i, j, rowMajor), False)
+            mem.touch(page_id(B, i, j, rowMajor), False)
+            mem.touch(page_id(A, i, j, rowMajor), True)
+            mem.touch(page_id(C, j, col, rowMajor), False)
+            mem.touch(page_id(B, j, i, rowMajor), False)
+            mem.touch(page_id(B, i, j, rowMajor), True)
 
-        if show_progress and i % 500 == 0:
+        if showProgress and i % 500 == 0:
             print(
                 f"  [{layout}] I={i}/{N}  "
-                f"reads={mem.read_transfers:,}  writes={mem.write_transfers:,}"
+                f"reads={mem.readTransfers:,}  writes={mem.writeTransfers:,}"
             )
 
-    return mem.read_transfers, mem.write_transfers
+    return mem.readTransfers, mem.writeTransfers
 
 def print_answer(label, reads, writes):
     print(f"{label}")
@@ -94,19 +94,19 @@ def main():
     print()
 
     print("Running (a) row-major...")
-    reads_a, writes_a = run_simulation(True)
+    readsA, writesA = run_simulation(True)
     print()
 
     print("Running (b) column-major...")
-    reads_b, writes_b = run_simulation(False)
+    readsB, writesB = run_simulation(False)
     print()
 
     print("=" * 48)
     print("FINAL ANSWERS")
     print("=" * 48)
-    print_answer("(a) Row-major order", reads_a, writes_a)
+    print_answer("(a) Row-major order", readsA, writesA)
     print()
-    print_answer("(b) Column-major order", reads_b, writes_b)
+    print_answer("(b) Column-major order", readsB, writesB)
     print("=" * 48)
     print()
     print("Why column-major is worse here:")

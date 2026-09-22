@@ -49,11 +49,11 @@ def neighbors(state):
         if disk < 0:
             continue
         for dst in ADJ[src]:
-            top_dst = tops[dst]
-            if top_dst < 0 or top_dst > disk:
-                new_state = list(state)
-                new_state[disk] = dst
-                yield tuple(new_state), src, dst
+            topDst = tops[dst]
+            if topDst < 0 or topDst > disk:
+                newState = list(state)
+                newState[disk] = dst
+                yield tuple(newState), src, dst
 
 def solve_hanoi(n):
     start = tuple([0] * n)
@@ -61,19 +61,19 @@ def solve_hanoi(n):
     if start == goal:
         return []
 
-    parent_a = {start: None}
-    move_a = {start: None}
-    parent_b = {goal: None}
-    move_b = {goal: None}
-    queue_a = deque([start])
-    queue_b = deque([goal])
+    parentA = {start: None}
+    moveA = {start: None}
+    parentB = {goal: None}
+    moveB = {goal: None}
+    queueA = deque([start])
+    queueB = deque([goal])
     meeting = None
 
-    while queue_a and queue_b:
-        if len(queue_a) <= len(queue_b):
-            meeting = expand(queue_a, parent_a, move_a, parent_b)
+    while queueA and queueB:
+        if len(queueA) <= len(queueB):
+            meeting = expand(queueA, parentA, moveA, parentB)
         else:
-            meeting = expand(queue_b, parent_b, move_b, parent_a)
+            meeting = expand(queueB, parentB, moveB, parentA)
         if meeting is not None:
             break
     else:
@@ -81,42 +81,42 @@ def solve_hanoi(n):
 
     path = []
     cur = meeting
-    while move_a[cur] is not None:
-        path.append(move_a[cur])
-        cur = parent_a[cur]
+    while moveA[cur] is not None:
+        path.append(moveA[cur])
+        cur = parentA[cur]
     path.reverse()
 
     cur = meeting
-    while move_b[cur] is not None:
-        src, dst = move_b[cur]
+    while moveB[cur] is not None:
+        src, dst = moveB[cur]
         path.append((dst, src))
-        cur = parent_b[cur]
+        cur = parentB[cur]
     return path
 
-def expand(queue, parent, move_map, other_parent):
+def expand(queue, parent, moveMap, otherParent):
     state = queue.popleft()
     for nxt, src, dst in neighbors(state):
         if nxt in parent:
             continue
         parent[nxt] = state
-        move_map[nxt] = (src, dst)
-        if nxt in other_parent:
+        moveMap[nxt] = (src, dst)
+        if nxt in otherParent:
             return nxt
         queue.append(nxt)
     return None
 
-def print_moves(moves, first_last=100):
+def print_moves(moves, firstLast=100):
     total = len(moves)
-    if total <= 2 * first_last:
+    if total <= 2 * firstLast:
         for src, dst in moves:
             print(f"{PEGS[src]} -> {PEGS[dst]}")
         return
 
-    for src, dst in moves[:first_last]:
+    for src, dst in moves[:firstLast]:
         print(f"{PEGS[src]} -> {PEGS[dst]}")
-    skipped = total - 2 * first_last
+    skipped = total - 2 * firstLast
     print(f"... ({skipped} moves omitted) ...")
-    for src, dst in moves[-first_last:]:
+    for src, dst in moves[-firstLast:]:
         print(f"{PEGS[src]} -> {PEGS[dst]}")
 
 def verify_moves(n, moves):

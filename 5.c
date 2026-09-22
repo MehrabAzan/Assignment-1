@@ -1,13 +1,5 @@
 /*
- * Problem 5: demonstrate heap fragmentation.
- *
- * 1) Allocate 3m blocks of 1 MiB each (m chosen so this nearly fills RAM).
- * 2) Free all odd-numbered blocks (~1.5m holes of 1 MiB).
- * 3) Allocate m blocks of 1.45 MiB each (too big for those holes).
- *
- * Prints timings for each phase. Explain the timings in your report:
- * phase 3 is often much slower / may fail or page heavily because the
- * free list is fragmented into 1 MiB gaps while requests need 1.45 MiB.
+ * Problem 5: demonstrate heap fragmentation (macOS).
  *
  * Usage: 5.exe [m]
  *   If m is omitted, the program estimates m from available memory.
@@ -17,58 +9,47 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#elif defined(__APPLE__)
+#include <unistd.h>
 #include <mach/mach.h>
 #include <sys/sysctl.h>
-#include <unistd.h>
-#elif defined(__linux__)
-#include <unistd.h>
-#else
-#include <unistd.h>
-#endif
 
 #define MIB (1024ULL * 1024ULL)
 #define SMALL_BLOCK MIB
 #define LARGE_BLOCK ((size_t)(1.45 * MIB))
 
+/*
+ * Returns the current monotonic time in seconds.
+ * Input: none. Output: seconds since an arbitrary epoch as double.
+ * Locals: ts holds the clock sample.
+ */
 static double NowSeconds(void) {
-#ifdef _WIN32
-    static LARGE_INTEGER freq = {0};
-    LARGE_INTEGER counter;
-    if (freq.QuadPart == 0) {
-        QueryPerformanceFrequency(&freq);
-    }
-    QueryPerformanceCounter(&counter);
-    return (double)counter.QuadPart / (double)freq.QuadPart;
-#else
     struct timespec ts;
-#if defined(CLOCK_MONOTONIC)
     if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
         return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
     }
-#endif
     timespec_get(&ts, TIME_UTC);
     return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
-#endif
 }
 
+/*
+ * Returns the system memory page size in bytes.
+ * Input: none. Output: page size, or 4096 if sysconf fails.
+ * Locals: page is the raw sysconf result.
+ */
 static size_t PageSize(void) {
-#ifdef _WIN32
-    SYSTEM_INFO info;
-    GetSystemInfo(&info);
-    return (size_t)info.dwPageSize;
-#else
     long page = sysconf(_SC_PAGESIZE);
     if (page <= 0) {
         return 4096;
     }
     return (size_t)page;
-#endif
 }
 
+/*
+ * Touches every page in a block so the OS commits physical RAM.
+ * Input: p points at bytes bytes of writable memory.
+ * Output: none (writes one byte per page, and the last byte).
+ * Locals: page is the stride; i walks page starts.
+ */
 static void TouchBlock(char *p, size_t bytes) {
     size_t page = PageSize();
     size_t i;
@@ -80,62 +61,45 @@ static void TouchBlock(char *p, size_t bytes) {
     }
 }
 
+/*
+ * Estimates currently available physical RAM in mebibytes (macOS).
+ * Input: none. Output: available MiB, or a fallback from hw.memsize / 1024.
+ * Locals: pageSize, vmstat, availPages for Mach VM; memSize for sysctl.
+ */
 static size_t AvailableMib(void) {
-#ifdef _WIN32
-    MEMORYSTATUSEX status;
-    status.dwLength = sizeof(status);
-    if (GlobalMemoryStatusEx(&status)) {
-        return (size_t)(status.ullAvailPhys / MIB);
+    vm_size_t pageSize = 0;
+    vm_statistics64_data_t vmstat;
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    uint64_t memSize = 0;
+    size_t len = sizeof(memSize);
+
+    if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS &&
+        host_statistics64(mach_host_self(), HOST_VM_INFO64,
+                          (host_info64_t)&vmstat, &count) == KERN_SUCCESS) {
+        uint64_t availPages =
+            (uint64_t)vmstat.free_count +
+            (uint64_t)vmstat.inactive_count +
+            (uint64_t)vmstat.speculative_count;
+        return (size_t)((availPages * (uint64_t)pageSize) / MIB);
     }
-#elif defined(__APPLE__)
-    {
-        vm_size_t pageSize = 0;
-        vm_statistics64_data_t vmstat;
-        mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
-        if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS &&
-            host_statistics64(mach_host_self(), HOST_VM_INFO64,
-                              (host_info64_t)&vmstat, &count) == KERN_SUCCESS) {
-            uint64_t availPages =
-                (uint64_t)vmstat.free_count +
-                (uint64_t)vmstat.inactive_count +
-                (uint64_t)vmstat.speculative_count;
-            return (size_t)((availPages * (uint64_t)pageSize) / MIB);
-        }
+
+    if (sysctlbyname("hw.memsize", &memSize, &len, NULL, 0) == 0 &&
+        memSize > 0) {
+        return (size_t)(memSize / MIB);
     }
-    {
-        uint64_t memsize = 0;
-        size_t len = sizeof(memsize);
-        if (sysctlbyname("hw.memsize", &memsize, &len, NULL, 0) == 0 &&
-            memsize > 0) {
-            return (size_t)(memsize / MIB);
-        }
-    }
-#elif defined(__linux__)
-    {
-        FILE *f = fopen("/proc/meminfo", "r");
-        if (f != NULL) {
-            char line[256];
-            unsigned long memAvailableKb = 0;
-            while (fgets(line, sizeof(line), f) != NULL) {
-                if (sscanf(line, "MemAvailable: %lu kB", &memAvailableKb) == 1) {
-                    break;
-                }
-            }
-            fclose(f);
-            if (memAvailableKb > 0) {
-                return (size_t)(memAvailableKb / 1024UL);
-            }
-        }
-    }
-#endif
     return 1024;
 }
 
+/*
+ * Chooses a default block-count parameter m from available RAM.
+ * Input: none. Output: m in [1, 2500] so that 3m MiB fits most usable RAM.
+ * Locals: avail is approximate free MiB; targetMib is the fill budget; m is result.
+ */
 static size_t ChooseM(void) {
     size_t avail = AvailableMib();
     size_t targetMib;
     size_t m;
-    /* Aim to fill most usable RAM with 3m MiB, but cap for safety. */
+
     if (avail < 64) {
         targetMib = avail / 2;
     } else {
@@ -145,17 +109,23 @@ static size_t ChooseM(void) {
     if (m < 1) {
         m = 1;
     }
-    /* Override with: 5.exe <m>  if you need a larger exhaustion test. */
     if (m > 2500) {
         m = 2500;
     }
     return m;
 }
 
+/*
+ * Allocates count blocks of bytes each, touching every page; times the work.
+ * Input: count, bytes; secondsOut receives elapsed seconds on success.
+ * Output: pointer array of count blocks, or NULL on calloc/malloc failure.
+ * Locals: blocks is the array; i indexes allocations; t0/t1 bound the timer.
+ */
 static char **AllocateBlocks(size_t count, size_t bytes, double *secondsOut) {
     char **blocks;
     size_t i;
-    double t0, t1;
+    double t0;
+    double t1;
 
     blocks = (char **)calloc(count, sizeof(char *));
     if (blocks == NULL) {
@@ -182,9 +152,16 @@ static char **AllocateBlocks(size_t count, size_t bytes, double *secondsOut) {
     return blocks;
 }
 
+/*
+ * Frees every odd-indexed block and times the frees.
+ * Input: blocks array of count pointers (even slots left allocated).
+ * Output: elapsed seconds; odd slots become NULL.
+ * Locals: i walks odd indices; t0/t1 bound the timer.
+ */
 static double FreeOddBlocks(char **blocks, size_t count) {
     size_t i;
-    double t0, t1;
+    double t0;
+    double t1;
 
     t0 = NowSeconds();
     for (i = 1; i < count; i += 2) {
@@ -195,6 +172,11 @@ static double FreeOddBlocks(char **blocks, size_t count) {
     return t1 - t0;
 }
 
+/*
+ * Frees every non-NULL block pointer and the array itself.
+ * Input: blocks (may be NULL) and count. Output: none.
+ * Locals: i indexes each slot.
+ */
 static void FreeAllBlocks(char **blocks, size_t count) {
     size_t i;
     if (blocks == NULL) {
@@ -206,29 +188,31 @@ static void FreeAllBlocks(char **blocks, size_t count) {
     free(blocks);
 }
 
-int main(int argc, char **argv) {
-    size_t m;
-    size_t smallCount;
-    char **smallBlocks;
-    char **largeBlocks;
-    double tAllocSmall;
-    double tFreeOdd;
-    double tAllocLarge;
-    size_t largeOk;
+/*
+ * Parses optional m from argv[1]; writes the accepted value when echoOn.
+ * Input: argc/argv; echoOn non-zero prints the parsed m to stdout.
+ * Output: m > 0 on success, 0 on bad/missing positive integer.
+ * Locals: parsed holds the converted argument.
+ */
+static size_t ParseMArgument(int argc, char **argv, int echoOn) {
+    size_t parsed;
 
-    if (argc >= 2) {
-        m = (size_t)strtoull(argv[1], NULL, 10);
-        if (m == 0) {
-            fprintf(stderr, "m must be a positive integer\n");
-            return 1;
-        }
-    } else {
-        m = ChooseM();
+    if (argc < 2) {
+        return 0;
     }
+    parsed = (size_t)strtoull(argv[1], NULL, 10);
+    if (echoOn) {
+        printf("read m argument: %zu\n", parsed);
+    }
+    return parsed;
+}
 
-    smallCount = 3 * m;
-
-    printf("Problem 5: heap fragmentation demo\n");
+/*
+ * Prints the planned phase sizes for the chosen m.
+ * Input: m and smallCount (= 3*m). Output: setup lines on stdout.
+ */
+static void PrintPlan(size_t m, size_t smallCount) {
+    printf("Problem 5: heap fragmentation demo (macOS)\n");
     printf("  available RAM (approx): %zu MiB\n", AvailableMib());
     printf("  m = %zu\n", m);
     printf("  phase 1: allocate %zu x 1 MiB = %zu MiB\n",
@@ -237,6 +221,22 @@ int main(int argc, char **argv) {
            smallCount / 2);
     printf("  phase 3: allocate %zu x 1.45 MiB = %.2f MiB\n\n",
            m, m * 1.45);
+}
+
+/*
+ * Runs the three fragmentation phases and prints timings.
+ * Input: m > 0. Output: 0 on completion (phase 3 may fail), 1 on phase-1 failure.
+ * Locals: small/large block arrays and per-phase timings.
+ */
+static int RunFragmentationDemo(size_t m) {
+    size_t smallCount = 3 * m;
+    char **smallBlocks;
+    char **largeBlocks;
+    double tAllocSmall;
+    double tFreeOdd;
+    double tAllocLarge;
+
+    PrintPlan(m, smallCount);
 
     smallBlocks = AllocateBlocks(smallCount, (size_t)SMALL_BLOCK, &tAllocSmall);
     if (smallBlocks == NULL) {
@@ -252,14 +252,13 @@ int main(int argc, char **argv) {
     if (largeBlocks == NULL) {
         printf("3) alloc m x 1.45 MiB:   FAILED (%.6f s until failure)\n",
                tAllocLarge);
-        printf("\nFragmentation likely prevented fitting 1.45 MiB blocks into 1 MiB holes.\n");
+        printf("\nFragmentation likely prevented fitting 1.45 MiB blocks "
+               "into 1 MiB holes.\n");
         FreeAllBlocks(smallBlocks, smallCount);
         return 0;
     }
-    largeOk = m;
     printf("3) alloc m x 1.45 MiB:   %.6f s  (%zu blocks ok)\n",
-           tAllocLarge, largeOk);
-
+           tAllocLarge, m);
     printf("\nNotes for your report:\n");
     printf("- Phase 1 touches every page, so time includes real RAM commit.\n");
     printf("- Phase 2 is cheap: free() mostly updates allocator metadata.\n");
@@ -270,4 +269,27 @@ int main(int argc, char **argv) {
     FreeAllBlocks(largeBlocks, m);
     FreeAllBlocks(smallBlocks, smallCount);
     return 0;
+}
+
+/*
+ * Entry point: resolve m from argv or AvailableMib, then run the demo.
+ * Input: argc/argv with optional positive integer m.
+ * Output: process exit status (0 success, 1 bad args or phase-1 failure).
+ * Locals: m is the block-count parameter.
+ */
+int main(int argc, char **argv) {
+    size_t m;
+
+    if (argc >= 2) {
+        m = ParseMArgument(argc, argv, 1);
+        if (m == 0) {
+            fprintf(stderr, "m must be a positive integer\n");
+            return 1;
+        }
+    } else {
+        m = ChooseM();
+        printf("chose m from available memory: %zu\n", m);
+    }
+
+    return RunFragmentationDemo(m);
 }
