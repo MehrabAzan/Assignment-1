@@ -20,6 +20,14 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <mach/mach.h>
+#include <sys/sysctl.h>
+#include <unistd.h>
+#elif defined(__linux__)
+#include <unistd.h>
+#else
+#include <unistd.h>
 #endif
 
 #define MIB (1024ULL * 1024ULL)
@@ -37,13 +45,32 @@ static double NowSeconds(void) {
     return (double)counter.QuadPart / (double)freq.QuadPart;
 #else
     struct timespec ts;
+#if defined(CLOCK_MONOTONIC)
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
+    }
+#endif
     timespec_get(&ts, TIME_UTC);
     return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
 #endif
 }
 
+static size_t PageSize(void) {
+#ifdef _WIN32
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    return (size_t)info.dwPageSize;
+#else
+    long page = sysconf(_SC_PAGESIZE);
+    if (page <= 0) {
+        return 4096;
+    }
+    return (size_t)page;
+#endif
+}
+
 static void TouchBlock(char *p, size_t bytes) {
-    size_t page = 4096;
+    size_t page = PageSize();
     size_t i;
     for (i = 0; i < bytes; i += page) {
         p[i] = 1;
@@ -59,6 +86,46 @@ static size_t AvailableMib(void) {
     status.dwLength = sizeof(status);
     if (GlobalMemoryStatusEx(&status)) {
         return (size_t)(status.ullAvailPhys / MIB);
+    }
+#elif defined(__APPLE__)
+    {
+        vm_size_t pageSize = 0;
+        vm_statistics64_data_t vmstat;
+        mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+        if (host_page_size(mach_host_self(), &pageSize) == KERN_SUCCESS &&
+            host_statistics64(mach_host_self(), HOST_VM_INFO64,
+                              (host_info64_t)&vmstat, &count) == KERN_SUCCESS) {
+            uint64_t availPages =
+                (uint64_t)vmstat.free_count +
+                (uint64_t)vmstat.inactive_count +
+                (uint64_t)vmstat.speculative_count;
+            return (size_t)((availPages * (uint64_t)pageSize) / MIB);
+        }
+    }
+    {
+        uint64_t memsize = 0;
+        size_t len = sizeof(memsize);
+        if (sysctlbyname("hw.memsize", &memsize, &len, NULL, 0) == 0 &&
+            memsize > 0) {
+            return (size_t)(memsize / MIB);
+        }
+    }
+#elif defined(__linux__)
+    {
+        FILE *f = fopen("/proc/meminfo", "r");
+        if (f != NULL) {
+            char line[256];
+            unsigned long memAvailableKb = 0;
+            while (fgets(line, sizeof(line), f) != NULL) {
+                if (sscanf(line, "MemAvailable: %lu kB", &memAvailableKb) == 1) {
+                    break;
+                }
+            }
+            fclose(f);
+            if (memAvailableKb > 0) {
+                return (size_t)(memAvailableKb / 1024UL);
+            }
+        }
     }
 #endif
     return 1024;
