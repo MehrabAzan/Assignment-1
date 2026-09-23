@@ -2,3 +2,10 @@
 *.vscode
 *__pycache__*
 *.kilo
+*~$report.docx
+*.slnx
+*.vs
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*x64*
