@@ -1,10 +1,12 @@
 /*
- * Problem 5: heap fragmentation demo.
+ * Problem 5: heap fragmentation demo (Windows).
  *
  * 1) Allocate 3m blocks of 1 MiB.
  * 2) Free all odd-numbered blocks (1-based: 1st, 3rd, 5th, ...).
  * 3) Allocate m blocks of 1.45 MiB.
  *
+ * Usage: 5.exe [m]
+ *   If m is omitted, m is estimated from available physical memory.
  */
 
 #include <stdio.h>

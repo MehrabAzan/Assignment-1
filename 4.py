@@ -86,7 +86,8 @@ def run_size(sizeN):
     Allocate and time both versions for one n.
     Input: sizeN.
     Output: (timeVersion1, timeVersion2) or None if allocation failed.
-    Locals: gibEstimate, matrices, matrixA, matrixB, matrixC, times.
+    Locals: gibEstimate, matrices, matrixA, matrixB, matrixC,
+            timeVersion1, timeVersion2.
     """
     gibEstimate = bytes_needed(sizeN) / (1024 ** 3)
     print(f"n = {sizeN}  (~{gibEstimate:.2f} GiB for A+B+C)")

@@ -160,12 +160,15 @@ def verify_moves(n, moves, pegNames, adjacency):
 def main():
     """
     Solve and print Hanoi on the assignment graph for n = 1..10.
-    Input: none (n range fixed by the assignment).
-    Output: for each n, header with n and move count, then moves.
+    Input: none (n range fixed by the assignment); each n is echoed.
+    Output: for each n, echoed n, header with move count, then moves.
     Locals: pegNames, adjacency, n, moves.
     """
     pegNames, adjacency = build_graph()
+    print("input: n = 1..10 (fixed by assignment)")
+    print()
     for n in range(1, 11):
+        print(f"input n: {n}")
         moves = solve_hanoi(n, adjacency)
         verify_moves(n, moves, pegNames, adjacency)
         print(f"=== n={n}  ({len(moves)} moves) ===")

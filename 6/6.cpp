@@ -1,6 +1,4 @@
 /*
- * Problem 6: binary search timing experiment (C++).
- *
  * Times 30,000,000 unsuccessful searches over sorted arrays of increasing
  * size. Array construction is excluded from the timed region. Theory: O(log n).
  */
@@ -14,12 +12,6 @@
 #include <vector>
 
 using namespace std;
-
-static const long long SIZE_LIST[] = {
-    100, 400, 1600, 6400, 25600, 102400, 409600, 1638400
-};
-static const int SIZE_COUNT = 8;
-static const long long DEFAULT_ITERS = 30000000LL;
 
 /*
  * Iterative binary search on a sorted array.
@@ -80,11 +72,12 @@ static double TimeSearches(const long long *sortedArr, long long sizeN,
 
 /*
  * Resolve iteration count from --iters.
- * Input: argc, argv. Output: positive count, default DEFAULT_ITERS.
+ * Input: argc, argv, defaultIters.
+ * Output: positive count, or defaultIters if unset.
  * Locals: numIters, argIndex.
  */
-static long long ParseIters(int argc, char **argv) {
-    long long numIters = DEFAULT_ITERS;
+static long long ParseIters(int argc, char **argv, long long defaultIters) {
+    long long numIters = defaultIters;
     int argIndex = 1;
 
     while (argIndex < argc) {
@@ -132,7 +125,7 @@ static void PrintTable(const long long *sizeList, const double *timeList,
  * Build one array, check hit/miss, then time unsuccessful searches.
  * Input: sizeN, searchTarget (should miss), numIters.
  * Output: elapsed seconds.
- * Locals: sortedArr, elapsedSeconds.
+ * Locals: sortedArr, data, elapsedSeconds.
  */
 static double RunSize(long long sizeN, long long searchTarget,
                       long long numIters) {
@@ -156,26 +149,32 @@ static double RunSize(long long sizeN, long long searchTarget,
  * Time 30M unsuccessful searches for each assignment array size.
  * Input: optional --iters N on the command line.
  * Output: process exit status.
- * Locals: numIters, searchTarget, timeList, i, sizeN, elapsedSeconds.
+ * Locals: sizeList, sizeCount, defaultIters, numIters, searchTarget,
+ *         timeList, i, sizeN, elapsedSeconds.
  */
 int main(int argc, char **argv) {
+    const long long sizeList[] = {
+        100, 400, 1600, 6400, 25600, 102400, 409600, 1638400
+    };
+    const int sizeCount = 8;
+    const long long defaultIters = 30000000LL;
     long long numIters;
     long long searchTarget;
-    double timeList[SIZE_COUNT];
+    double timeList[8];
     int i;
 
-    numIters = ParseIters(argc, argv);
+    numIters = ParseIters(argc, argv, defaultIters);
     cout << "read iterations: " << numIters << "\n";
     searchTarget = -1;
     cout << "search target (unsuccessful): " << searchTarget << "\n";
     cout << "array sizes:";
-    for (i = 0; i < SIZE_COUNT; i++) {
-        cout << " " << SIZE_LIST[i];
+    for (i = 0; i < sizeCount; i++) {
+        cout << " " << sizeList[i];
     }
     cout << "\n\n";
 
-    for (i = 0; i < SIZE_COUNT; i++) {
-        long long sizeN = SIZE_LIST[i];
+    for (i = 0; i < sizeCount; i++) {
+        long long sizeN = sizeList[i];
         double elapsedSeconds = RunSize(sizeN, searchTarget, numIters);
         timeList[i] = elapsedSeconds;
         cout << "n=" << setw(8) << sizeN << ": "
@@ -184,7 +183,7 @@ int main(int argc, char **argv) {
     }
 
     cout << "\n";
-    PrintTable(SIZE_LIST, timeList, SIZE_COUNT, numIters);
+    PrintTable(sizeList, timeList, sizeCount, numIters);
     cout << "\n";
     cout << "Binary search is O(log n), so time should grow slowly with n "
             "(about a constant bump each time n grows by 4x).\n";

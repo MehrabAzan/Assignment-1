@@ -1,6 +1,4 @@
 """
-Problem 6: binary search timing experiment (Python).
-
 Times 30,000,000 unsuccessful searches over sorted arrays of increasing
 size. Array construction is excluded from the timed region. Theory: O(log n).
 """
@@ -9,9 +7,6 @@ import math
 import os
 import sys
 import time
-
-SIZE_LIST = (100, 400, 1600, 6400, 25600, 102400, 409600, 1638400)
-DEFAULT_ITERS = 30_000_000
 
 def binary_search(sortedArr, searchTarget):
     """
@@ -55,14 +50,14 @@ def time_searches(sortedArr, searchTarget, numIters):
     endTime = time.perf_counter()
     return endTime - startTime
 
-def parse_iters(argvList):
+def parse_iters(argvList, defaultIters):
     """
     Resolve iteration count from env or --iters.
-    Input: argvList (sys.argv without the script name).
-    Output: positive int, default DEFAULT_ITERS.
+    Input: argvList (sys.argv without the script name), defaultIters.
+    Output: positive int, or defaultIters if unset.
     Locals: numIters, envText, argIndex.
     """
-    numIters = DEFAULT_ITERS
+    numIters = defaultIters
     envText = os.environ.get("BINARY_SEARCH_ITERS")
     if envText is not None:
         numIters = int(envText)
@@ -114,20 +109,20 @@ def main():
     Time 30M unsuccessful searches for each assignment array size.
     Input: optional --iters N on the command line.
     Output: per-size timings and a summary table.
-    Locals: numIters, resultRows, sizeN, elapsedSeconds, searchTarget.
+    Locals: sizeList, defaultIters, numIters, resultRows, sizeN,
+            elapsedSeconds, searchTarget.
     """
-    print("Problem 6: binary search timings (Python)")
-    print()
-
-    numIters = parse_iters(sys.argv[1:])
+    sizeList = (100, 400, 1600, 6400, 25600, 102400, 409600, 1638400)
+    defaultIters = 30_000_000
+    numIters = parse_iters(sys.argv[1:], defaultIters)
     print(f"read iterations: {numIters}")
     searchTarget = -1
     print(f"search target (unsuccessful): {searchTarget}")
-    print(f"array sizes: {list(SIZE_LIST)}")
+    print(f"array sizes: {list(sizeList)}")
     print()
 
     resultRows = []
-    for sizeN in SIZE_LIST:
+    for sizeN in sizeList:
         elapsedSeconds = run_size(sizeN, searchTarget, numIters)
         resultRows.append((sizeN, elapsedSeconds))
         print(f"n={sizeN:>8}: {elapsedSeconds:.6f} s", flush=True)
