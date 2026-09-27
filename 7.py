@@ -209,9 +209,6 @@ def main():
     Locals: text, sourceLabel, ok.
     """
     text, sourceLabel = read_cli_text(sys.argv[1:])
-    print(f"read input source: {sourceLabel}")
-    print(f"read text: {repr(text)}")
-    print()
 
     if text == "":
         print("error: empty text; need at least one character")

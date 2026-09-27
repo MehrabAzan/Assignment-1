@@ -1,9 +1,3 @@
-"""
-Problem 1: Hanoi on G with pegs Start,A1,A2,A3,A4,Dest.
-Edges (Start,A1),(A1,A2),(A2,A3),(A3,A4),(A4,A1),(A1,Dest).
-Bidirectional BFS; time O(6^n*n), space O(6^n).
-"""
-
 from collections import deque
 
 def build_graph():
@@ -165,7 +159,6 @@ def main():
     Locals: pegNames, adjacency, n, moves.
     """
     pegNames, adjacency = build_graph()
-    print("input: n = 1..10 (fixed by assignment)")
     print()
     for n in range(1, 11):
         print(f"input n: {n}")

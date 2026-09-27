@@ -1,8 +1,3 @@
-/*
- * Times 30,000,000 unsuccessful searches over sorted arrays of increasing
- * size. Array construction is excluded from the timed region. Theory: O(log n).
- */
-
 class Problem6 {
     /*
      * Iterative binary search on a sorted array.

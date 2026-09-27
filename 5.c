@@ -1,14 +1,3 @@
-/*
- * Problem 5: heap fragmentation demo (Windows).
- *
- * 1) Allocate 3m blocks of 1 MiB.
- * 2) Free all odd-numbered blocks (1-based: 1st, 3rd, 5th, ...).
- * 3) Allocate m blocks of 1.45 MiB.
- *
- * Usage: 5.exe [m]
- *   If m is omitted, m is estimated from available physical memory.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
@@ -207,7 +196,6 @@ static size_t ParseMArgument(int argc, char **argv, int echoOn) {
  * Locals: none.
  */
 static void PrintPlan(size_t m, size_t smallCount) {
-    printf("Problem 5: heap fragmentation demo (Windows)\n");
     printf("  available RAM (approx): %zu MiB\n", AvailableMib());
     printf("  m = %zu\n", m);
     printf("  phase 1: allocate %zu x 1 MiB = %zu MiB\n",
@@ -255,11 +243,6 @@ static int RunFragmentationDemo(size_t m) {
     }
     printf("3) alloc m x 1.45 MiB:   %.6f s  (%zu blocks ok)\n",
            tAllocLarge, m);
-    printf("\nNotes for your report:\n");
-    printf("- Phase 1 touches every page, so time includes real RAM commit.\n");
-    printf("- Phase 2 is cheap: free() mostly updates allocator metadata.\n");
-    printf("- Phase 3 requests 1.45 MiB while free holes are ~1 MiB, so the\n");
-    printf("  allocator must coalesce, grow the heap, or map new regions.\n");
 
     FreeAllBlocks(largeBlocks, m);
     FreeAllBlocks(smallBlocks, smallCount);

@@ -1,11 +1,3 @@
-"""
-Problem 4: time matrix addition for two loop orders.
-
-Version 1: outer i, inner j.
-Version 2: outer j, inner i.
-Init of A and B is not timed. Arrays are float32 and C-contiguous.
-"""
-
 import time
 
 try:
@@ -136,8 +128,7 @@ def main():
     Locals: sizeList, results, sizeN, timed.
     """
     sizeList = [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
-
-    print("Problem 4: matrix addition timings")
+    
     print("float32 C-contiguous arrays, init not timed\n")
 
     results = []
