@@ -115,7 +115,6 @@ def main():
     print(f"search target (unsuccessful): {searchTarget}")
     print(f"array sizes: {list(sizeList)}")
     print()
-
     resultRows = []
     for sizeN in sizeList:
         elapsedSeconds = run_size(sizeN, searchTarget, numIters)

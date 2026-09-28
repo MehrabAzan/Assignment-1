@@ -62,15 +62,12 @@ def time_both_versions(matrixA, matrixB, matrixC, sizeN):
     """
     add_version1(matrixA, matrixB, matrixC, sizeN)
     add_version2(matrixA, matrixB, matrixC, sizeN)
-
     startVersion1 = time.perf_counter()
     add_version1(matrixA, matrixB, matrixC, sizeN)
     timeVersion1 = time.perf_counter() - startVersion1
-
     startVersion2 = time.perf_counter()
     add_version2(matrixA, matrixB, matrixC, sizeN)
     timeVersion2 = time.perf_counter() - startVersion2
-
     return timeVersion1, timeVersion2
 
 def run_size(sizeN):
@@ -83,17 +80,14 @@ def run_size(sizeN):
     """
     gibEstimate = bytes_needed(sizeN) / (1024 ** 3)
     print(f"n = {sizeN}  (~{gibEstimate:.2f} GiB for A+B+C)")
-
     matrices = allocate_matrices(sizeN)
     if matrices is None:
         print("  skipped: not enough memory\n")
         return None
-
     matrixA, matrixB, matrixC = matrices
     timeVersion1, timeVersion2 = time_both_versions(
         matrixA, matrixB, matrixC, sizeN
     )
-
     print(f"  version1 (i, then j): {timeVersion1:.6f} s")
     print(f"  version2 (j, then i): {timeVersion2:.6f} s")
     if timeVersion1 > 0:
@@ -128,15 +122,12 @@ def main():
     Locals: sizeList, results, sizeN, timed.
     """
     sizeList = [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768]
-    
     print("float32 C-contiguous arrays, init not timed\n")
-
     results = []
     for sizeN in sizeList:
         timed = run_size(sizeN)
         if timed is not None:
             results.append((sizeN, timed[0], timed[1]))
-
     if results:
         print_summary_table(results)
 

@@ -14,11 +14,9 @@ using namespace std;
  * Output: index of hit, or -1 on miss.
  * Locals: lo, hi, mid, midVal.
  */
-static long long BinarySearch(const long long *sortedArr, long long sizeN,
-                              long long searchTarget) {
+static long long BinarySearch(const long long *sortedArr, long long sizeN, long long searchTarget) {
     long long lo = 0;
     long long hi = sizeN - 1;
-
     while (lo <= hi) {
         long long mid = lo + (hi - lo) / 2;
         long long midVal = sortedArr[mid];
@@ -52,8 +50,7 @@ static vector<long long> MakeSortedArray(long long sizeN) {
  * Output: elapsed seconds.
  * Locals: startTime, endTime, iterIndex, sink.
  */
-static double TimeSearches(const long long *sortedArr, long long sizeN,
-                           long long searchTarget, long long numIters) {
+static double TimeSearches(const long long *sortedArr, long long sizeN, long long searchTarget, long long numIters) {
     volatile long long sink = 0;
     auto startTime = chrono::steady_clock::now();
     for (long long iterIndex = 0; iterIndex < numIters; iterIndex++) {
@@ -74,7 +71,6 @@ static double TimeSearches(const long long *sortedArr, long long sizeN,
 static long long ParseIters(int argc, char **argv, long long defaultIters) {
     long long numIters = defaultIters;
     int argIndex = 1;
-
     while (argIndex < argc) {
         if (strcmp(argv[argIndex], "--iters") == 0 &&
             argIndex + 1 < argc) {
@@ -97,8 +93,7 @@ static long long ParseIters(int argc, char **argv, long long defaultIters) {
  * Output: none.
  * Locals: i, sizeN, elapsedSeconds, logN, ratio.
  */
-static void PrintTable(const long long *sizeList, const double *timeList,
-                       int sizeCount, long long numIters) {
+static void PrintTable(const long long *sizeList, const double *timeList, int sizeCount, long long numIters) {
     cout << "iterations per size: " << numIters << "\n\n";
     cout << setw(10) << "n"
          << "  " << setw(12) << "time_s"
@@ -122,11 +117,9 @@ static void PrintTable(const long long *sizeList, const double *timeList,
  * Output: elapsed seconds.
  * Locals: sortedArr, data, elapsedSeconds.
  */
-static double RunSize(long long sizeN, long long searchTarget,
-                      long long numIters) {
+static double RunSize(long long sizeN, long long searchTarget, long long numIters) {
     vector<long long> sortedArr = MakeSortedArray(sizeN);
     const long long *data = sortedArr.data();
-
     if (BinarySearch(data, sizeN, searchTarget) != -1) {
         cerr << "expected miss for target=" << searchTarget
              << " at n=" << sizeN << "\n";
@@ -136,7 +129,6 @@ static double RunSize(long long sizeN, long long searchTarget,
         cerr << "expected hit at index 0 for n=" << sizeN << "\n";
         exit(1);
     }
-
     return TimeSearches(data, sizeN, searchTarget, numIters);
 }
 
@@ -157,7 +149,6 @@ int main(int argc, char **argv) {
     long long searchTarget;
     double timeList[8];
     int i;
-
     numIters = ParseIters(argc, argv, defaultIters);
     cout << "read iterations: " << numIters << "\n";
     searchTarget = -1;
@@ -167,7 +158,6 @@ int main(int argc, char **argv) {
         cout << " " << sizeList[i];
     }
     cout << "\n\n";
-
     for (i = 0; i < sizeCount; i++) {
         long long sizeN = sizeList[i];
         double elapsedSeconds = RunSize(sizeN, searchTarget, numIters);
@@ -176,12 +166,10 @@ int main(int argc, char **argv) {
              << fixed << setprecision(6) << elapsedSeconds
              << " s\n" << flush;
     }
-
     cout << "\n";
     PrintTable(sizeList, timeList, sizeCount, numIters);
     cout << "\n";
     cout << "Binary search is O(log n), so time should grow slowly with n "
             "(about a constant bump each time n grows by 4x).\n";
-
     return 0;
 }

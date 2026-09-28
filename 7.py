@@ -23,16 +23,13 @@ def build_huffman_tree(freqMap):
     """
     if not freqMap:
         return None
-
     heapList = []
     tieId = 0
     for symbol, weight in freqMap.items():
         heapq.heappush(heapList, (weight, tieId, symbol, None, None))
         tieId += 1
-
     if len(heapList) == 1:
         return heapList[0]
-
     while len(heapList) > 1:
         leftNode = heapq.heappop(heapList)
         rightNode = heapq.heappop(heapList)
@@ -45,7 +42,6 @@ def build_huffman_tree(freqMap):
         )
         tieId += 1
         heapq.heappush(heapList, parentNode)
-
     return heapList[0]
 
 def assign_codes(rootNode):
@@ -58,12 +54,10 @@ def assign_codes(rootNode):
     codeMap = {}
     if rootNode is None:
         return codeMap
-
     weight, tieId, symbol, leftNode, rightNode = rootNode
     if leftNode is None and rightNode is None:
         codeMap[symbol] = "0"
         return codeMap
-
     stack = [(rootNode, "")]
     while stack:
         node, prefix = stack.pop()
@@ -98,11 +92,9 @@ def decode_bits(bitString, rootNode):
     """
     if rootNode is None:
         return ""
-
     weight, tieId, symbol, leftNode, rightNode = rootNode
     if leftNode is None and rightNode is None:
         return symbol * len(bitString)
-
     outChars = []
     node = rootNode
     for bit in bitString:
@@ -169,19 +161,15 @@ def run_huffman(text):
     freqMap = count_frequencies(text)
     print_frequency_table(freqMap)
     print()
-
     rootNode = build_huffman_tree(freqMap)
     codeMap = assign_codes(rootNode)
     print_code_table(codeMap, freqMap)
     print()
-
     avgLen = average_code_length(freqMap, codeMap)
     print(f"average / expected code length: {avgLen:.6f} bits/symbol")
-
     bitString = encode_text(text, codeMap)
     print(f"encoded bit length: {len(bitString)} bits")
     print(f"encoded bits: {bitString}")
-
     decodedText = decode_bits(bitString, rootNode)
     ok = decodedText == text
     print(f"decoded text: {repr(decodedText)}")
@@ -209,11 +197,9 @@ def main():
     Locals: text, sourceLabel, ok.
     """
     text, sourceLabel = read_cli_text(sys.argv[1:])
-
     if text == "":
         print("error: empty text; need at least one character")
         return 1
-
     ok = run_huffman(text)
     if not ok:
         print("error: encode/decode round-trip failed")

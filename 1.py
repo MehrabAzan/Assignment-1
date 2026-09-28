@@ -2,14 +2,28 @@ from collections import deque
 
 def build_graph():
     """
-    Build the assignment peg graph.
+    Build the assignment peg graph as a directed edge list.
     Input: none.
     Output: pegNames (list[str]), adjacency (list[list[int]]).
     Locals: pegNames, adjacency.
     """
     pegNames = ["Start", "A1", "A2", "A3", "A4", "Dest"]
-    adjacency = [[1], [0, 2, 4, 5], [1, 3], [2, 4], [3, 1], [1]]
+    adjacency = [[1], [2, 5], [3], [4], [1], []]
     return pegNames, adjacency
+
+
+def reverse_adjacency(adjacency):
+    """
+    Build the reverse directed graph for backward BFS.
+    Input: adjacency.
+    Output: reverseAdj with the same length.
+    Locals: reverseAdj, src, dst.
+    """
+    reverseAdj = [[] for _ in adjacency]
+    for src, outs in enumerate(adjacency):
+        for dst in outs:
+            reverseAdj[dst].append(src)
+    return reverseAdj
 
 def tops_of(state, numPegs):
     """
@@ -84,14 +98,15 @@ def reconstruct_path(meeting, parentA, moveA, parentB, moveB):
 def solve_hanoi(n, adjacency):
     """
     Shortest legal move sequence for n disks from Start to Dest.
-    Input: n, adjacency (Start=0, Dest=last index).
+    Input: n, adjacency (Start=0, Dest=last index, directed).
     Output: list of (srcPeg, dstPeg).
-    Locals: start, goal, parentA, moveA, parentB, moveB, queueA, queueB, meeting.
+    Locals: start, goal, reverseAdj, parentA, moveA, parentB, moveB, queueA, queueB, meeting.
     """
     start = tuple([0] * n)
     goal = tuple([len(adjacency) - 1] * n)
     if start == goal:
         return []
+    reverseAdj = reverse_adjacency(adjacency)
     parentA = {start: None}
     moveA = {start: None}
     parentB = {goal: None}
@@ -103,7 +118,7 @@ def solve_hanoi(n, adjacency):
         if len(queueA) <= len(queueB):
             meeting = expand(queueA, parentA, moveA, parentB, adjacency)
         else:
-            meeting = expand(queueB, parentB, moveB, parentA, adjacency)
+            meeting = expand(queueB, parentB, moveB, parentA, reverseAdj)
         if meeting is not None:
             break
     else:

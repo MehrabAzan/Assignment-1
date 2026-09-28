@@ -138,7 +138,6 @@ class Problem6 {
         }
         System.out.println();
         System.out.println();
-
         double[] timeList = new double[sizeList.length];
         for (int i = 0; i < sizeList.length; i++) {
             int sizeN = (int) sizeList[i];
@@ -146,7 +145,6 @@ class Problem6 {
             timeList[i] = elapsedSeconds;
             System.out.printf("n=%8d: %.6f s%n", sizeN, elapsedSeconds);
         }
-
         System.out.println();
         PrintTable(sizeList, timeList, numIters);
         System.out.println();

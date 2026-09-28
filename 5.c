@@ -14,7 +14,6 @@
 static double NowSeconds(void) {
     static LARGE_INTEGER freq = {0};
     LARGE_INTEGER counter;
-
     if (freq.QuadPart == 0) {
         QueryPerformanceFrequency(&freq);
     }
@@ -45,7 +44,6 @@ static size_t PageSize(void) {
 static void TouchBlock(char *p, size_t bytes) {
     size_t page = PageSize();
     size_t i;
-
     for (i = 0; i < bytes; i += page) {
         p[i] = 1;
     }
@@ -61,7 +59,6 @@ static void TouchBlock(char *p, size_t bytes) {
  */
 static size_t AvailableMib(void) {
     MEMORYSTATUSEX status;
-
     status.dwLength = sizeof(status);
     if (GlobalMemoryStatusEx(&status)) {
         return (size_t)(status.ullAvailPhys / MIB);
@@ -70,26 +67,23 @@ static size_t AvailableMib(void) {
 }
 
 /*
- * Choose default m from available RAM, capped for safety.
- * Input: none. Output: m in [1, 2500].
+ * Choose default m so phase 1 (3m MiB) uses most available RAM.
+ * Input: none. Output: m >= 1.
  * Locals: avail, targetMib, m.
  */
 static size_t ChooseM(void) {
     size_t avail = AvailableMib();
     size_t targetMib;
     size_t m;
-
     if (avail < 64) {
         targetMib = avail / 2;
     } else {
-        targetMib = (avail * 8) / 10;
+        /* Aim for ~90% of free physical RAM in the 3m x 1 MiB phase. */
+        targetMib = (avail * 9) / 10;
     }
     m = targetMib / 3;
     if (m < 1) {
         m = 1;
-    }
-    if (m > 2500) {
-        m = 2500;
     }
     return m;
 }
@@ -105,13 +99,11 @@ static char **AllocateBlocks(size_t count, size_t bytes, double *secondsOut) {
     size_t i;
     double t0;
     double t1;
-
     *secondsOut = 0.0;
     blocks = (char **)calloc(count, sizeof(char *));
     if (blocks == NULL) {
         return NULL;
     }
-
     t0 = NowSeconds();
     for (i = 0; i < count; i++) {
         blocks[i] = (char *)malloc(bytes);
@@ -144,7 +136,6 @@ static double FreeOddBlocks(char **blocks, size_t count) {
     size_t i;
     double t0;
     double t1;
-
     t0 = NowSeconds();
     for (i = 0; i < count; i += 2) {
         free(blocks[i]);
@@ -161,7 +152,6 @@ static double FreeOddBlocks(char **blocks, size_t count) {
  */
 static void FreeAllBlocks(char **blocks, size_t count) {
     size_t i;
-
     if (blocks == NULL) {
         return;
     }
@@ -179,7 +169,6 @@ static void FreeAllBlocks(char **blocks, size_t count) {
  */
 static size_t ParseMArgument(int argc, char **argv, int echoOn) {
     size_t parsed;
-
     if (argc < 2) {
         return 0;
     }
@@ -219,19 +208,15 @@ static int RunFragmentationDemo(size_t m) {
     double tAllocSmall;
     double tFreeOdd;
     double tAllocLarge;
-
     PrintPlan(m, smallCount);
-
     smallBlocks = AllocateBlocks(smallCount, (size_t)SMALL_BLOCK, &tAllocSmall);
     if (smallBlocks == NULL) {
         fprintf(stderr, "phase 1 failed - try a smaller m\n");
         return 1;
     }
     printf("1) alloc 3m x 1 MiB:     %.6f s\n", tAllocSmall);
-
     tFreeOdd = FreeOddBlocks(smallBlocks, smallCount);
     printf("2) free odd-numbered:    %.6f s\n", tFreeOdd);
-
     largeBlocks = AllocateBlocks(m, LARGE_BLOCK, &tAllocLarge);
     if (largeBlocks == NULL) {
         printf("3) alloc m x 1.45 MiB:   FAILED (%.6f s until failure)\n",
@@ -257,7 +242,6 @@ static int RunFragmentationDemo(size_t m) {
  */
 int main(int argc, char **argv) {
     size_t m;
-
     if (argc >= 2) {
         m = ParseMArgument(argc, argv, 1);
         if (m == 0) {
@@ -268,6 +252,5 @@ int main(int argc, char **argv) {
         m = ChooseM();
         printf("chose m from available memory: %zu\n", m);
     }
-
     return RunFragmentationDemo(m);
 }
